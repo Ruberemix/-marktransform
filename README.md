@@ -11,6 +11,7 @@ Construido sobre [MarkItDown](https://github.com/microsoft/markitdown) de Micros
 ## Capturas de pantalla
 
 > *Interfaz principal con tema oscuro*
+<img width="1360" height="887" alt="image" src="https://github.com/user-attachments/assets/94cab19c-7fa9-4950-a164-69641f200454" />
 
 ---
 
