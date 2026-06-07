@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarkTransform — Convierte cualquier archivo a Markdown</title>
+  <meta name="description" content="MarkTransform es una aplicación de escritorio gratuita para Windows que convierte PDF, Word, Excel, PowerPoint, imágenes y más a formato Markdown en segundos." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a14;
+      --bg2:       #11111f;
+      --bg3:       #1a1a2e;
+      --accent:    #6366f1;
+      --accent2:   #818cf8;
+      --accent3:   #a5b4fc;
+      --text:      #e2e8f0;
+      --muted:     #94a3b8;
+      --border:    rgba(99,102,241,.25);
+      --card:      rgba(255,255,255,.04);
+      --radius:    16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 64px;
+      background: rgba(10,10,20,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.15rem; color: var(--accent2); text-decoration: none; }
+    .nav-logo span { font-size: 1.3rem; }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: .9rem; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--accent); color: #fff; text-decoration: none;
+      padding: .5rem 1.25rem; border-radius: 8px; font-size: .9rem; font-weight: 600;
+      transition: background .2s, transform .15s;
+    }
+    .nav-cta:hover { background: var(--accent2); transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 6rem 1.5rem 4rem;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,.18) 0%, transparent 70%);
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: .5;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      background: rgba(99,102,241,.15); border: 1px solid var(--border);
+      color: var(--accent3); padding: .35rem 1rem; border-radius: 999px;
+      font-size: .8rem; font-weight: 500; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 800; line-height: 1.1;
+      background: linear-gradient(135deg, #fff 30%, var(--accent3));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 1.25rem;
+    }
+    .hero p {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--muted); max-width: 600px; margin: 0 auto 2.5rem;
+    }
+    .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--accent); color: #fff; text-decoration: none;
+      padding: .85rem 2rem; border-radius: 10px; font-weight: 700; font-size: 1rem;
+      box-shadow: 0 0 30px rgba(99,102,241,.4);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 45px rgba(99,102,241,.6); }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); text-decoration: none;
+      padding: .85rem 2rem; border-radius: 10px; font-weight: 600; font-size: 1rem;
+      transition: background .2s, transform .2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,.08); transform: translateY(-2px); }
+    .hero-note { margin-top: 1.25rem; color: var(--muted); font-size: .85rem; }
+
+    /* ── FORMATS STRIP ── */
+    .formats-strip {
+      background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 1.5rem 2rem; text-align: center;
+    }
+    .formats-strip p { color: var(--muted); font-size: .85rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: .08em; }
+    .format-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
+    .tag {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--accent3); padding: .3rem .85rem; border-radius: 999px; font-size: .8rem; font-weight: 500;
+    }
+
+    /* ── SECTIONS ── */
+    section { padding: 5rem 1.5rem; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      display: inline-block; color: var(--accent); font-size: .8rem;
+      font-weight: 600; text-transform: uppercase; letter-spacing: .1em; margin-bottom: .75rem;
+    }
+    .section-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+    .section-sub { color: var(--muted); font-size: 1rem; max-width: 560px; }
+
+    /* ── FEATURES ── */
+    #features { background: var(--bg2); }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem; margin-top: 3rem;
+    }
+    .feature-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.75rem;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: var(--accent); transform: translateY(-3px); }
+    .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; }
+    .feature-card p { color: var(--muted); font-size: .9rem; line-height: 1.6; }
+
+    /* ── HOW IT WORKS ── */
+    .steps { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 3rem; max-width: 640px; }
+    .step { display: flex; gap: 1.25rem; align-items: flex-start; }
+    .step-num {
+      min-width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 1rem; color: #fff; flex-shrink: 0;
+    }
+    .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: .25rem; }
+    .step p { color: var(--muted); font-size: .9rem; }
+
+    /* ── FORMATS TABLE ── */
+    #formatos { background: var(--bg2); }
+    .formats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem; margin-top: 3rem;
+    }
+    .format-group {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+    }
+    .format-group h3 { font-size: .9rem; font-weight: 700; color: var(--accent2); margin-bottom: .75rem; display: flex; align-items: center; gap: .4rem; }
+    .format-group ul { list-style: none; }
+    .format-group li { color: var(--muted); font-size: .875rem; padding: .25rem 0; display: flex; align-items: center; gap: .4rem; }
+    .format-group li::before { content: '·'; color: var(--accent); font-weight: 700; }
+
+    /* ── CTA ── */
+    .cta-section {
+      text-align: center;
+      background: radial-gradient(ellipse 80% 80% at 50% 50%, rgba(99,102,241,.15) 0%, transparent 70%);
+    }
+    .cta-section h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 800; margin-bottom: 1rem; }
+    .cta-section p { color: var(--muted); margin-bottom: 2rem; }
+    .os-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      color: var(--muted); font-size: .8rem; margin-top: 1rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg2); border-top: 1px solid var(--border);
+      padding: 2rem 1.5rem; text-align: center;
+    }
+    footer p { color: var(--muted); font-size: .85rem; }
+    footer a { color: var(--accent2); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero-btns { flex-direction: column; align-items: center; }
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp .6s ease both; }
+    .delay-1 { animation-delay: .1s; }
+    .delay-2 { animation-delay: .2s; }
+    .delay-3 { animation-delay: .3s; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo"><span>⬇</span> MarkTransform</a>
+  <ul class="nav-links">
+    <li><a href="#caracteristicas">Características</a></li>
+    <li><a href="#como-usar">Cómo usar</a></li>
+    <li><a href="#formatos">Formatos</a></li>
+  </ul>
+  <a href="#descargar" class="nav-cta">⬇ Descargar gratis</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge fade-up">✨ Disponible para Windows — Gratis</div>
+  <h1 class="fade-up delay-1">Convierte cualquier archivo<br />a Markdown al instante</h1>
+  <p class="fade-up delay-2">
+    MarkTransform es una aplicación de escritorio para Windows que transforma PDF, Word, Excel,
+    PowerPoint, imágenes y más al formato Markdown, listo para IA y documentación.
+  </p>
+  <div class="hero-btns fade-up delay-3">
+    <a href="#descargar" class="btn-primary">⬇ Descargar para Windows</a>
+    <a href="https://github.com/Ruberemix/marktransform" target="_blank" class="btn-secondary">
+      <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      Ver en GitHub
+    </a>
+  </div>
+  <p class="hero-note">🪟 Windows 10/11 · Sin instalación de Python · 100% gratuito</p>
+</section>
+
+<!-- FORMATS STRIP -->
+<div class="formats-strip">
+  <p>Formatos compatibles</p>
+  <div class="format-tags">
+    <span class="tag">PDF</span>
+    <span class="tag">Word</span>
+    <span class="tag">Excel</span>
+    <span class="tag">PowerPoint</span>
+    <span class="tag">JPG / PNG</span>
+    <span class="tag">MP3 / WAV</span>
+    <span class="tag">HTML</span>
+    <span class="tag">CSV</span>
+    <span class="tag">JSON</span>
+    <span class="tag">XML</span>
+    <span class="tag">YouTube</span>
+    <span class="tag">EPub</span>
+    <span class="tag">ZIP</span>
+    <span class="tag">Jupyter</span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="caracteristicas">
+  <div class="container">
+    <span class="section-label">Características</span>
+    <h2 class="section-title">Todo lo que necesitas,<br />sin complicaciones</h2>
+    <p class="section-sub">Diseñado para cualquier persona, sin necesidad de conocimientos técnicos.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🖥️</div>
+        <h3>Interfaz amigable</h3>
+        <p>Diseño moderno con tema oscuro y claro. Fácil de usar para cualquier persona desde el primer momento.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Conversión rápida</h3>
+        <p>Convierte documentos en segundos directamente en tu computadora, sin subir archivos a ningún servidor.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📁</div>
+        <h3>Múltiples archivos</h3>
+        <p>Selecciona y convierte varios archivos a la vez en una sola operación. Ahorra tiempo al máximo.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔗</div>
+        <h3>Soporte de URLs</h3>
+        <p>Pega un enlace de YouTube, Wikipedia o cualquier página web y conviértelo a Markdown al instante.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👁️</div>
+        <h3>Vista previa en vivo</h3>
+        <p>Lee el Markdown generado antes de guardarlo. Navega entre resultados de distintos archivos fácilmente.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>100% local y privado</h3>
+        <p>Tus archivos nunca salen de tu computadora. No se requiere internet ni cuenta para usar la app.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="como-usar">
+  <div class="container">
+    <span class="section-label">Cómo usar</span>
+    <h2 class="section-title">Tres pasos y listo</h2>
+    <p class="section-sub">No necesitas saber programar ni instalar Python. Solo descarga y abre.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div>
+          <h3>Descarga e instala MarkTransform</h3>
+          <p>Descarga el instalador gratuito para Windows, ejecútalo y sigue los pasos. No requiere Python.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h3>Selecciona tus archivos</h3>
+          <p>Haz clic en "Examinar archivos" y elige uno o varios documentos, o pega una URL en el campo correspondiente.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h3>Convierte y guarda</h3>
+          <p>Presiona "Convertir", revisa la vista previa del Markdown generado y guárdalo donde quieras.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORMATS -->
+<section id="formatos">
+  <div class="container">
+    <span class="section-label">Formatos</span>
+    <h2 class="section-title">Soporta prácticamente todo</h2>
+    <p class="section-sub">Si tienes un archivo, MarkTransform probablemente puede convertirlo.</p>
+    <div class="formats-grid">
+      <div class="format-group">
+        <h3>📄 Documentos</h3>
+        <ul>
+          <li>PDF</li>
+          <li>Word (.docx, .doc)</li>
+          <li>Texto plano (.txt)</li>
+        </ul>
+      </div>
+      <div class="format-group">
+        <h3>📊 Oficina</h3>
+        <ul>
+          <li>Excel (.xlsx, .xls)</li>
+          <li>PowerPoint (.pptx, .ppt)</li>
+          <li>CSV</li>
+        </ul>
+      </div>
+      <div class="format-group">
+        <h3>🖼️ Medios</h3>
+        <ul>
+          <li>Imágenes (JPG, PNG, GIF)</li>
+          <li>Audio (MP3, WAV)</li>
+          <li>YouTube (URL)</li>
+        </ul>
+      </div>
+      <div class="format-group">
+        <h3>🌐 Web y datos</h3>
+        <ul>
+          <li>HTML / páginas web</li>
+          <li>JSON / XML</li>
+          <li>RSS</li>
+        </ul>
+      </div>
+      <div class="format-group">
+        <h3>📦 Otros</h3>
+        <ul>
+          <li>EPub</li>
+          <li>ZIP</li>
+          <li>Jupyter Notebook (.ipynb)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA / DOWNLOAD -->
+<section class="cta-section" id="descargar">
+  <div class="container">
+    <h2>¿Listo para empezar?</h2>
+    <p>Descarga MarkTransform gratis y empieza a convertir tus archivos hoy.</p>
+    <a href="#" class="btn-primary" style="display:inline-flex;">
+      ⬇ Descargar MarkTransform — Gratis
+    </a>
+    <br />
+    <span class="os-badge">🪟 Compatible con Windows 10 y Windows 11</span>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    © 2026 Ruberemix · Todos los derechos reservados ·
+    <a href="https://github.com/Ruberemix/marktransform" target="_blank">GitHub</a>
+    · Construido sobre <a href="https://github.com/microsoft/markitdown" target="_blank">MarkItDown</a> de Microsoft
+  </p>
+</footer>
+
+</body>
+</html>
